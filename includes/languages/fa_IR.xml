@@ -35,6 +35,16 @@
       <value><![CDATA[محصولات جديد]]></value>
       <group>general</group>
     </definition>
+     <definition>
+      <key>general_products</key>
+      <value><![CDATA[محصولات عمومي]]></value>
+      <group>general</group>
+    </definition>
+<definition>
+      <key>variants_products</key>
+      <value><![CDATA[محصولات زيرگروه]]></value>
+      <group>general</group>
+    </definition>
     <definition>
       <key>feature_products</key>
       <value><![CDATA[محصولات پیشنهادی]]></value>
