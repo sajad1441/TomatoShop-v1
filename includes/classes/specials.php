@@ -83,7 +83,59 @@
 
       return $this->_specials[$id];
     }
-    
+    /**
+     * Get the variants specials
+     *
+     * @access public
+     * @return array
+     */
+    function getVariantsSpecials() {
+      global $osC_Language, $osC_Database;
+             
+      $Qspecials = $osC_Database->query('select vs.*, pv.products_price, pv.products_images_id, p.products_id, p.products_type, pd.products_name, p.products_tax_class_id, i.image from :table_variants_specials vs inner join :table_products_variants pv on vs.products_variants_id = pv.products_variants_id inner join :table_original_products p on pv.products_id = p.products_id inner join :table_products_description pd on (p.products_id = pd.products_id and pd.language_id = :language_id) left join :table_products_images i on (pv.products_images_id = i.id)');
+      $Qspecials->bindTable(':table_variants_specials', TABLE_VARIANTS_SPECIALS);
+      $Qspecials->bindTable(':table_original_products', TABLE_PRODUCTS);
+      $Qspecials->bindTable(':table_products_images', TABLE_PRODUCTS_IMAGES);
+      $Qspecials->bindTable(':table_products_description', TABLE_PRODUCTS_DESCRIPTION);
+      $Qspecials->bindTable(':table_products_variants', TABLE_PRODUCTS_VARIANTS);
+      $Qspecials->bindInt(':language_id', $osC_Language->getID());
+      $Qspecials->setBatchLimit((isset($_GET['page']) && is_numeric($_GET['page']) ? $_GET['page'] : 1), MAX_DISPLAY_SPECIAL_PRODUCTS);
+      $Qspecials->execute();
+       
+      $result = array('listing' => $Qspecials);
+      if ($Qspecials->numberOfRows() > 0) {
+        while($Qspecials->next()) {
+          $special_product = array('specials_id' => $Qspecials->valueInt('variants_specials_id'),
+                                   'products_id' => $Qspecials->valueInt('products_id'),
+                                                         'products_type' => $Qspecials->valueInt('products_type'),
+                                                         'image' =>  $Qspecials->value('image'),
+                                                         'products_tax_class_id' => $Qspecials->valueInt('products_tax_class_id'),
+                                   'products_price' => $Qspecials->value('products_price'),
+                                   'variants_specials_price' => $Qspecials->value('variants_specials_price'));
+           
+          //attach the group and value for the products name
+          $special_product['products_name'] = $Qspecials->value('products_name');
+          $Qvariants = $osC_Database->query('select pvg.products_variants_groups_name, pvv.products_variants_values_name from :table_products_variants_entries pve inner join :table_products_variants_groups pvg on (pve.products_variants_groups_id = pvg.products_variants_groups_id and pvg.language_id = :group_language_id) inner join :table_products_variants_values pvv on (pve.products_variants_values_id = pvv.products_variants_values_id and pvv.language_id = :value_language_id) where pve.products_variants_id = :products_variants_id');
+          $Qvariants->bindTable(':table_products_variants_entries', TABLE_PRODUCTS_VARIANTS_ENTRIES);
+          $Qvariants->bindTable(':table_products_variants_groups', TABLE_PRODUCTS_VARIANTS_GROUPS);
+          $Qvariants->bindTable(':table_products_variants_values', TABLE_PRODUCTS_VARIANTS_VALUES);
+          $Qvariants->bindInt(':group_language_id', $osC_Language->getID());
+          $Qvariants->bindInt(':value_language_id', $osC_Language->getID());
+          $Qvariants->bindInt(':products_variants_id',  $Qspecials->valueInt('products_variants_id'));
+          $Qvariants->execute();
+           
+          if ($Qvariants->numberOfRows() > 0) {
+            while($Qvariants->next()) {
+              $special_product['products_name'] .= '(<strong>' . $Qvariants->value('products_variants_groups_name') . ':' . $Qvariants->value('products_variants_values_name') . '</strong>)';
+            }
+          }
+           
+          $result['products'][] = $special_product;
+        }
+      }
+       
+      return $result;
+    }
     /**
      * Get the variants special price
      * 
@@ -144,3 +196,4 @@
     }
   }
 ?>
+
